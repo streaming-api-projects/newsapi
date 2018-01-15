@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- include streamdataio library -->
+<script src="https://cdn.rawgit.com/streamdataio/streamdataio-js-sdk/master/dist/bundles/streamdataio.min.js"></script>
+
+<!-- use json-patch-duplex library for applying patches -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fast-json-patch/0.5.1/json-patch-duplex.min.js"></script>
+
+</head>
+<body>
+
+<h1>Streamdata.io - News API Prototype</h1>
+<p>This is a listing of the latest news from the <a href="https://newsapi.org/">NewsAPI</a>, showing real time news from the United States. The NewsAPI is proxied using <a href="https://streadata.io">Streamdata.io</a> which employs <a href="https://en.wikipedia.org/wiki/Server-sent_events">Server-Sent Events (SSE)</a> to push updates to the browser, which then polls the API every minute looking for updates--if any updates are received, they are delivered to the browser using <a href="https://tools.ietf.org/html/rfc6902">JSON Patch</a>, and rendered to the screen.</p>
+<div id="checked" style="text-align:center;"></div>
+<hr>
+<div id="alerts"></div>
+<hr>
+<script>
+
+function sortByKey(array, key) {
+    return array.sort(function(a, b) {
+        var x = a[key];
+        var y = b[key];
+        return ((x > y) ? -1 : ((x < y) ? 1 : 0));
+    });
+}
+
+function processResults(results)
+	{
+
+	var table = document.createElement("table");
+
+	results.forEach(function(entry) {
+
+	    thisdate = entry.publishedAt;
+	    thisdate = new Date(thisdate);
+	    thisdate = (thisdate.getMonth() + 1) + "/" + thisdate.getDate() + "/" + thisdate.getFullYear() + ' ' + thisdate.getHours() + ":" + thisdate.getMinutes() + ' ';
+
+		var tr = document.createElement("tr");
+
+		var td = document.createElement("td");
+		var text = document.createTextNode(thisdate);
+		td.appendChild(text);
+		tr.appendChild(td);
+
+		var td = document.createElement("td");
+		var text = document.createTextNode(entry.title);
+		td.appendChild(text);
+		tr.appendChild(td);
+
+		var td = document.createElement("td");
+		var text = document.createTextNode(entry.description);
+		td.appendChild(text);
+		tr.appendChild(td);
+
+		table.appendChild(tr);
+	});
+	document.getElementById('alerts').innerHTML = '';
+	document.getElementById("alerts").appendChild(table);
+	}
+
+
+(function() {
+  var eventSource = null;
+  var stocks = [];
+  var checked = 1;
+
+  function connect() {
+    // REPLACE WITH YOUR OWN TOKEN HERE
+    var appToken = "MTNjZmFmMzgtN2RjYy00ZDFhLWEwYWItZTVlMzQ2OTA3ZmEz";
+
+    // create the StreamdataEventSource Object
+    eventSource = streamdataio.createEventSource("http://newsapi.org/v2/top-headlines", appToken);
+
+    eventSource
+     .onOpen(function() {
+       console.log("streamdata Event Source connected.")
+     })
+     .onData(function(data) {
+
+       //results = sortByKey(data, 'publishedAt');
+       results = data.articles;
+       console.log(results);
+	   processResults(results);
+
+	   document.getElementById('checked').innerHTML = "Updated " + checked + ' time!';
+
+     })
+     .onPatch(function(patch) {
+
+       // use json patch library to apply the patch (patch)
+       // to the original snapshot (stocks)
+       console.log("udate!");
+       	results = patch.events;
+		if(results)
+			{
+	       	console.log(results);
+	       	results = results.articles;
+			processResults(results);
+			}
+		checked++;
+		document.getElementById('checked').innerHTML = "Updated " + checked + ' times!';
+
+     })
+     .onError(function(error) {
+       // displays the error message
+       console.log(error.getMessage());
+     });
+
+    // open the data stream to the REST service through streamdata.io proxy
+    eventSource.open();
+
+  };
+
+  function disconnect() {
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+  };
+
+  connect();
+})();
+</script>
+
+
+</body>
+</html>
