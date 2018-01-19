@@ -45,8 +45,12 @@ function processResults(results)
 		tr.appendChild(td);
 
 		var td = document.createElement("td");
+
+		var a = document.createElement("a");
+		a.setAttribute('href', entry.url);
 		var text = document.createTextNode(entry.title);
-		td.appendChild(text);
+		a.appendChild(text);
+		td.appendChild(a);
 		tr.appendChild(td);
 
 		var td = document.createElement("td");
